@@ -161,12 +161,16 @@
         };
 
         function checkPassword() {
-            const input = document.getElementById('pw-input').value;
-            if (input === CORRECT_PW) {
-                sessionStorage.setItem("isLoggedIn", "true");
-                showMainScreen();
-            } else {
-                alert("비밀번호가 틀렸습니다!");
+            try {
+                const input = document.getElementById('pw-input').value;
+                if (input === CORRECT_PW) {
+                    sessionStorage.setItem("isLoggedIn", "true");
+                    showMainScreen();
+                } else {
+                    alert("비밀번호가 틀렸습니다!");
+                }
+            } catch (error) {
+                alert("에러 발생: " + error.message);
             }
         }
 
