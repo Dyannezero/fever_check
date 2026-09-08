@@ -82,9 +82,9 @@
             <h2>👶 아기 케어 기록장</h2>
             <p style="font-size:0.9rem; color:#636e72; margin-bottom:15px;">부부만 접속할 수 있어요</p>
             <div class="form-group">
-                <input type="password" id="pw-input" placeholder="비밀번호 입력 (기본: 1234)">
+                <input type="password" id="pw-input" placeholder="비밀번호 입력 (기본: 1234)" onkeydown="if(event.key === 'Enter') checkPassword();">
             </div>
-            <button onclick="checkPassword()">로그인</button>
+            <button id="login-btn" type="button">로그인</button>
         </div>
     </div>
 
@@ -145,7 +145,7 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-C0p-LbIDu0Lztbl-Sw55OxVQe0LxOHY3F5MXo0zHQMuC1oce2yNd169RRAkSJ42u/exec";
         const CORRECT_PW = "0318"; // 원하시는 비밀번호
 
-        // 오늘 날짜 및 현재 시간 자동 세팅
+        // 페이지 로드 시 초기화
         window.onload = function() {
             const today = new Date();
             document.getElementById('input-date').value = today.toISOString().split('T')[0];
@@ -154,7 +154,13 @@
             const minutes = String(today.getMinutes()).padStart(2, '0');
             document.getElementById('input-time').value = `${hours}:${minutes}`;
 
-            // 이미 로그인한 적이 있다면 스킵
+            // 로그인 버튼 클릭 이벤트 안전하게 연결
+            const loginBtn = document.getElementById('login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', checkPassword);
+            }
+
+            // 이미 로그인한 적이 있다면 바로 메인 화면으로
             if (sessionStorage.getItem("isLoggedIn") === "true") {
                 showMainScreen();
             }
@@ -162,15 +168,15 @@
 
         function checkPassword() {
             try {
-                const input = document.getElementById('pw-input').value;
-                if (input === CORRECT_PW) {
+                const inputVal = document.getElementById('pw-input').value;
+                if (inputVal === CORRECT_PW) {
                     sessionStorage.setItem("isLoggedIn", "true");
                     showMainScreen();
                 } else {
                     alert("비밀번호가 틀렸습니다!");
                 }
-            } catch (error) {
-                alert("에러 발생: " + error.message);
+            } catch (err) {
+                alert("로그인 처리 중 에러 발생: " + err.message);
             }
         }
 
@@ -189,14 +195,13 @@
                 .then(res => res.json())
                 .then(data => {
                     listDiv.innerHTML = "";
-                    if (data.length === 0) {
+                    if (!data || data.length === 0) {
                         listDiv.innerHTML = '<div style="text-align:center; color:#b2bec3; padding:20px;">아직 기록이 없습니다.</div>';
                         return;
                     }
 
                     // 최신순 정렬
-                    data.reverse().forEach((row, index) => {
-                        // row 구조: [시간, 체온, 투약종류, 메모, rowIndex]
+                    data.reverse().forEach((row) => {
                         const [timeStr, tempStr, medStr, memoStr, rowIndex] = row;
                         const medBadge = medStr !== "없음" ? `💊 <b>${medStr}</b>` : `✨ 투약 없음`;
                         
@@ -214,7 +219,7 @@
                     });
                 })
                 .catch(err => {
-                    listDiv.innerHTML = '<div style="text-align:center; color:red;">데이터를 불러오지 못했습니다.</div>';
+                    listDiv.innerHTML = '<div style="text-align:center; color:red;">데이터를 불러오지 못했습니다. URL을 확인해 주세요.</div>';
                 });
         }
 
@@ -226,9 +231,13 @@
             const medVal = document.getElementById('input-med').value;
             const memoVal = document.getElementById('input-memo').value;
 
-            // 월/일 형태 및 시간 조합 (예: 09/08 10:35)
+            if (!dateVal || !timeVal || !tempVal) {
+                alert("날짜, 시간, 체온을 모두 입력해 주세요.");
+                return;
+            }
+
             const parts = dateVal.split('-');
-            const formattedTime = `${parts[1]!}/${parts[2]!} ${timeVal}`;
+            const formattedTime = `${parts[1]}/${parts[2]} ${timeVal}`;
 
             const formData = new URLSearchParams();
             formData.append("action", "add");
@@ -248,13 +257,13 @@
                         document.getElementById('input-memo').value = "";
                         loadRecords();
                     } else {
-                        alert("저장 실패");
+                        alert("저장에 실패했습니다.");
                     }
                     saveBtn.innerText = "💾 기록 저장하기";
                     saveBtn.disabled = false;
                 })
                 .catch(err => {
-                    alert("서버 통신 오류");
+                    alert("서버 통신 오류가 발생했습니다.");
                     saveBtn.innerText = "💾 기록 저장하기";
                     saveBtn.disabled = false;
                 });
@@ -274,8 +283,11 @@
                     if(res.result === "success") {
                         loadRecords();
                     } else {
-                        alert("삭제 실패");
+                        alert("삭제에 실패했습니다.");
                     }
+                })
+                .catch(err => {
+                    alert("삭제 통신 중 오류가 발생했습니다.");
                 });
         }
     </script>
