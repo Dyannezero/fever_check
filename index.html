@@ -141,11 +141,9 @@
     </div>
 
     <script>
-        // 설정: 본인의 구글 웹앱(Apps Script) URL을 아래에 입력해야 합니다!
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-C0p-LbIDu0Lztbl-Sw55OxVQe0LxOHY3F5MXo0zHQMuC1oce2yNd169RRAkSJ42u/exec";
         const CORRECT_PW = "0318"; // 원하시는 비밀번호
 
-        // 페이지 로드 시 초기화
         window.onload = function() {
             const today = new Date();
             document.getElementById('input-date').value = today.toISOString().split('T')[0];
@@ -154,13 +152,11 @@
             const minutes = String(today.getMinutes()).padStart(2, '0');
             document.getElementById('input-time').value = `${hours}:${minutes}`;
 
-            // 로그인 버튼 클릭 이벤트 안전하게 연결
             const loginBtn = document.getElementById('login-btn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', checkPassword);
             }
 
-            // 이미 로그인한 적이 있다면 바로 메인 화면으로
             if (sessionStorage.getItem("isLoggedIn") === "true") {
                 showMainScreen();
             }
@@ -186,7 +182,7 @@
             loadRecords();
         }
 
-        // 구글 시트에서 데이터 불러오기
+        // 구글 시트에서 데이터 불러오기 (날짜 포맷 정제 기능 포함)
         function loadRecords() {
             const listDiv = document.getElementById('record-list');
             listDiv.innerHTML = '<div class="loading">불러오는 중...</div>';
@@ -200,9 +196,21 @@
                         return;
                     }
 
-                    // 최신순 정렬
                     data.reverse().forEach((row) => {
-                        const [timeStr, tempStr, medStr, memoStr, rowIndex] = row;
+                        let [timeStr, tempStr, medStr, memoStr, rowIndex] = row;
+                        
+                        // 만약 구글 시트가 날짜를 ISO 형식(T21:45...)으로 바꿔버렸다면 예쁘게 변환
+                        if (timeStr.includes('T')) {
+                            const d = new Date(timeStr);
+                            if (!isNaN(d.getTime())) {
+                                const m = String(d.getMonth() + 1).padStart(2, '0');
+                                const day = String(d.getDate()).padStart(2, '0');
+                                const h = String(d.getHours()).padStart(2, '0');
+                                const min = String(d.getMinutes()).padStart(2, '0');
+                                timeStr = `${m}/${day} ${h}:${min}`;
+                            }
+                        }
+
                         const medBadge = medStr !== "없음" ? `💊 <b>${medStr}</b>` : `✨ 투약 없음`;
                         
                         const item = document.createElement('div');
