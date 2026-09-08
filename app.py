@@ -9,7 +9,7 @@ st.set_page_config(page_title="우리 아기 투약 & 체온 공유", page_icon=
 # ---------------------------------------------------------
 # 1. 로그인 (비밀번호 설정)
 # ---------------------------------------------------------
-CORRECT_PASSWORD = "1234"  # 원하시는 비밀번호로 변경 가능
+CORRECT_PASSWORD = "0318"  # 원하시는 비밀번호로 변경 가능
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
