@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👶 아기 투약 & 체온 실시간 공유</title>
+    <style>
+        :root {
+            --primary-color: #ff7675;
+            --primary-hover: #fab1a0;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #2d3436;
+            --gray-color: #b2bec3;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 16px; max-width: 600px; margin: 0 auto; }
+        
+        /* 로그인 화면 */
+        #login-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 80vh; text-align: center;
+        }
+        .login-card {
+            background: var(--card-bg); padding: 30px; border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 100%; max-width: 360px;
+        }
+        .login-card h2 { margin-bottom: 20px; color: var(--primary-color); }
+        
+        /* 공통 스타일 */
+        .hidden { display: none !important; }
+        .card {
+            background: var(--card-bg); padding: 20px; border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+        h1 { font-size: 1.4rem; text-align: center; margin-bottom: 6px; color: var(--text-color); }
+        .subtitle { font-size: 0.85rem; text-align: center; color: #636e72; margin-bottom: 20px; }
+        
+        /* 폼 요소 */
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 6px; color: #4b6584; }
+        input, select, textarea {
+            width: 100%; padding: 12px; border: 1px solid #dfe6e9; border-radius: 10px;
+            font-size: 1rem; background-color: #fdfdfd;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary-color); }
+        .row { display: flex; gap: 10px; }
+        .col { flex: 1; }
+        
+        /* 버튼 */
+        button {
+            width: 100%; background-color: var(--primary-color); color: white; border: none;
+            padding: 14px; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #e84393; }
+        
+        /* 기록장 리스트 */
+        .record-item {
+            background: #ffffff; border-left: 4px solid var(--primary-color);
+            padding: 14px; border-radius: 8px; margin-bottom: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .record-info div { margin-bottom: 4px; font-size: 0.95rem; }
+        .record-info .memo { font-size: 0.85rem; color: #636e72; background: #f1f2f6; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;}
+        .delete-btn {
+            background-color: #ff7675; color: white; border: none; padding: 8px 12px;
+            border-radius: 6px; font-size: 0.8rem; cursor: pointer; width: auto;
+        }
+        .delete-btn:hover { background-color: #d63031; }
+        
+        /* 로딩 스피너 */
+        .loading { text-align: center; padding: 20px; color: #b2bec3; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 로그인 화면 -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>👶 아기 케어 기록장</h2>
+            <p style="font-size:0.9rem; color:#636e72; margin-bottom:15px;">부부만 접속할 수 있어요</p>
+            <div class="form-group">
+                <input type="password" id="pw-input" placeholder="비밀번호 입력 (기본: 1234)">
+            </div>
+            <button onclick="checkPassword()">로그인</button>
+        </div>
+    </div>
+
+    <!-- 2. 메인 기록장 화면 -->
+    <div id="main-screen" class="hidden">
+        <h1>👶 아기 투약 & 체온 기록장</h1>
+        <p class="subtitle">✨ 남편과 실시간으로 공유됩니다</p>
+
+        <!-- 입력 카드 -->
+        <div class="card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 14px; color: #2d3436;">📝 새로운 기록 남기기</h3>
+            
+            <div class="row">
+                <div class="col form-group">
+                    <label>📅 날짜</label>
+                    <input type="date" id="input-date">
+                </div>
+                <div class="col form-group">
+                    <label>⏰ 시간</label>
+                    <input type="time" id="input-time">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col form-group">
+                    <label>🌡️ 체온 (°C)</label>
+                    <input type="number" id="input-temp" step="0.1" value="37.5">
+                </div>
+                <div class="col form-group">
+                    <label>💊 투약 종류</label>
+                    <select id="input-med">
+                        <option value="없음">없음</option>
+                        <option value="아세트아미노펜">아세트아미노펜</option>
+                        <option value="이부프로펜/덱시부프로펜">이부프로펜/덱시부프로펜</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>💬 특이사항 / 메모</label>
+                <input type="text" id="input-memo" placeholder="예: 떡뻥 잘 먹음, 땀 많이 남">
+            </div>
+
+            <button onclick="saveRecord()">💾 기록 저장하기</button>
+        </div>
+
+        <!-- 실시간 기록장 리스트 -->
+        <div class="card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 14px; color: #2d3436;">📋 실시간 기록장</h3>
+            <div id="record-list">
+                <div class="loading">데이터를 불러오는 중...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 설정: 본인의 구글 웹앱(Apps Script) URL을 아래에 입력해야 합니다!
+        const SCRIPT_URL = "여기에_구글_앱스스크립트_URL을_넣으세요";
+        const CORRECT_PW = "1234"; // 원하시는 비밀번호
+
+        // 오늘 날짜 및 현재 시간 자동 세팅
+        window.onload = function() {
+            const today = new Date();
+            document.getElementById('input-date').value = today.toISOString().split('T')[0];
+            
+            const hours = String(today.getHours()).padStart(2, '0');
+            const minutes = String(today.getMinutes()).padStart(2, '0');
+            document.getElementById('input-time').value = `${hours}:${minutes}`;
+
+            // 이미 로그인한 적이 있다면 스킵
+            if (sessionStorage.getItem("isLoggedIn") === "true") {
+                showMainScreen();
+            }
+        };
+
+        function checkPassword() {
+            const input = document.getElementById('pw-input').value;
+            if (input === CORRECT_PW) {
+                sessionStorage.setItem("isLoggedIn", "true");
+                showMainScreen();
+            } else {
+                alert("비밀번호가 틀렸습니다!");
+            }
+        }
+
+        function showMainScreen() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            loadRecords();
+        }
+
+        // 구글 시트에서 데이터 불러오기
+        function loadRecords() {
+            const listDiv = document.getElementById('record-list');
+            listDiv.innerHTML = '<div class="loading">불러오는 중...</div>';
+
+            fetch(SCRIPT_URL + "?action=get")
+                .then(res => res.json())
+                .then(data => {
+                    listDiv.innerHTML = "";
+                    if (data.length === 0) {
+                        listDiv.innerHTML = '<div style="text-align:center; color:#b2bec3; padding:20px;">아직 기록이 없습니다.</div>';
+                        return;
+                    }
+
+                    // 최신순 정렬
+                    data.reverse().forEach((row, index) => {
+                        // row 구조: [시간, 체온, 투약종류, 메모, rowIndex]
+                        const [timeStr, tempStr, medStr, memoStr, rowIndex] = row;
+                        const medBadge = medStr !== "없음" ? `💊 <b>${medStr}</b>` : `✨ 투약 없음`;
+                        
+                        const item = document.createElement('div');
+                        item.className = 'record-item';
+                        item.innerHTML = `
+                            <div class="record-info">
+                                <div>🗓️ <b>${timeStr}</b> &nbsp;|&nbsp; 🌡️ <b>${tempStr}°C</b></div>
+                                <div>${medBadge}</div>
+                                ${memoStr ? `<div class="memo">📝 ${memoStr}</div>` : ''}
+                            </div>
+                            <button class="delete-btn" onclick="deleteRecord(${rowIndex})">삭제</button>
+                        `;
+                        listDiv.appendChild(item);
+                    });
+                })
+                .catch(err => {
+                    listDiv.innerHTML = '<div style="text-align:center; color:red;">데이터를 불러오지 못했습니다.</div>';
+                });
+        }
+
+        // 구글 시트에 데이터 저장하기
+        function saveRecord() {
+            const dateVal = document.getElementById('input-date').value;
+            const timeVal = document.getElementById('input-time').value;
+            const tempVal = document.getElementById('input-temp').value;
+            const medVal = document.getElementById('input-med').value;
+            const memoVal = document.getElementById('input-memo').value;
+
+            // 월/일 형태 및 시간 조합 (예: 09/08 10:35)
+            const parts = dateVal.split('-');
+            const formattedTime = `${parts[1]!}/${parts[2]!} ${timeVal}`;
+
+            const formData = new URLSearchParams();
+            formData.append("action", "add");
+            formData.append("time", formattedTime);
+            formData.append("temp", tempVal);
+            formData.append("medicine", medVal);
+            formData.append("memo", memoVal);
+
+            const saveBtn = document.querySelector('button[onclick="saveRecord()"]');
+            saveBtn.innerText = "저장 중...";
+            saveBtn.disabled = true;
+
+            fetch(SCRIPT_URL, { method: "POST", body: formData })
+                .then(res => res.json())
+                .then(res => {
+                    if(res.result === "success") {
+                        document.getElementById('input-memo').value = "";
+                        loadRecords();
+                    } else {
+                        alert("저장 실패");
+                    }
+                    saveBtn.innerText = "💾 기록 저장하기";
+                    saveBtn.disabled = false;
+                })
+                .catch(err => {
+                    alert("서버 통신 오류");
+                    saveBtn.innerText = "💾 기록 저장하기";
+                    saveBtn.disabled = false;
+                });
+        }
+
+        // 기록 삭제하기
+        function deleteRecord(rowIndex) {
+            if (!confirm("정말 이 기록을 삭제하시겠습니까?")) return;
+
+            const formData = new URLSearchParams();
+            formData.append("action", "delete");
+            formData.append("rowIndex", rowIndex);
+
+            fetch(SCRIPT_URL, { method: "POST", body: formData })
+                .then(res => res.json())
+                .then(res => {
+                    if(res.result === "success") {
+                        loadRecords();
+                    } else {
+                        alert("삭제 실패");
+                    }
+                });
+        }
+    </script>
+</body>
+</html>
